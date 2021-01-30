@@ -9,6 +9,7 @@ const DUMP: &str = concat!(
     "<page>",
     "<ns>0</ns>",
     "<title>alpha</title>",
+    r#"<redirect title="&lt;3" />"#,
     "<revision>",
     "<format>beta</format>",
     "<model>gamma</model>",
@@ -36,7 +37,14 @@ fn main() {
             namespace: 0,
             text,
             title,
-        })) => format == "beta" && model == "gamma" && text == "delta" && title == "alpha",
+            redirect: Some(redirect),
+        })) =>
+            format == "beta"
+                && model == "gamma"
+                && text == "delta"
+                && title == "alpha"
+                && redirect == "<3",
+        Some(Err(e)) => panic!(e),
         _ => false,
     });
     assert!(match parser.next() {
@@ -46,6 +54,7 @@ fn main() {
             namespace: 42,
             text,
             title,
+            redirect: None,
         })) => text == "zeta" && title == "epsilon",
         _ => false,
     });

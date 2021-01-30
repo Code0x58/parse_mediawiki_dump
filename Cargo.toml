@@ -8,7 +8,7 @@ repository = "https://github.com/portstrom/parse_mediawiki_dump"
 version = "0.1.0"
 
 [dependencies]
-quick-xml = "0.12"
+quick-xml = "0.20"
 
 [[example]]
 name = "main"

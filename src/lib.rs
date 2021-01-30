@@ -65,6 +65,9 @@ extern crate quick_xml;
 use quick_xml::{events::Event, Reader};
 use std::io::BufRead;
 
+/// Enum of non-empty tags that have additional parsing.
+///
+/// Empty tags such as `redirect` only have attributes parsed on their event.
 enum PageChildElement {
     Ns,
     Revision,
@@ -133,6 +136,13 @@ pub struct Page {
     ///
     /// Parsed from the text content of the `title` element in the `page` element.
     pub title: String,
+
+    /// The target of the redirect, if any
+    ///
+    /// Parsed from the `title` attribute of the `redirect` element.
+    ///
+    /// For non-redirecting pages this is None.
+    pub redirect: Option<String>,
 }
 
 /// Parser working as an iterator over pages.
@@ -224,6 +234,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
         let mut namespace = None;
         let mut text = None;
         let mut title = None;
+        let mut redirect = None;
         loop {
             parser.buffer.clear();
             match match parser
@@ -238,6 +249,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
                             namespace,
                             text,
                             title,
+                            redirect,
                         })),
                         _ => Err(Error::Format(parser.reader.buffer_position())),
                     }
@@ -248,6 +260,19 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
                             b"ns" => PageChildElement::Ns,
                             b"revision" => PageChildElement::Revision,
                             b"title" => PageChildElement::Title,
+                            b"redirect" => {
+                                for attr in event.attributes() {
+                                    let attr = attr?;
+                                    if attr.key == b"title" {
+                                        redirect =
+                                            Some(attr.unescape_and_decode_value(&parser.reader)?);
+                                        break;
+                                    }
+                                }
+                                // the redirect is an empty tag so return unknown to skip to the
+                                // end of it
+                                PageChildElement::Unknown
+                            }
                             _ => PageChildElement::Unknown,
                         }
                     } else {
