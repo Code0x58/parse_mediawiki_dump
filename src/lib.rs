@@ -204,6 +204,13 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
             .read_namespaced_event(&mut parser.buffer, &mut parser.namespace_buffer)?
         {
             (_, Event::End(_)) => return Ok(None),
+            (_, Event::Eof) => {
+                return Err(quick_xml::Error::UnexpectedEof(format!(
+                    "EOF while looking for page at position {}",
+                    parser.reader.buffer_position()
+                ))
+                .into())
+            }
             (namespace, Event::Start(event)) => {
                 match_namespace(namespace) && event.local_name() == b"page"
             }
@@ -365,6 +372,11 @@ fn skip_element(parser: &mut Parser<impl BufRead>) -> Result<(), quick_xml::Erro
                 level -= 1;
             }
             Event::Start(_) => level += 1,
+            Event::Eof => {
+                return Err(quick_xml::Error::UnexpectedEof(
+                    "EOF while skipping element".into(),
+                ))
+            }
             _ => {}
         }
     }
