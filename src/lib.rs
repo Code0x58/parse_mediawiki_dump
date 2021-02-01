@@ -215,10 +215,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
     }
     loop {
         parser.buffer.clear();
-        if !match parser
-            .reader
-            .read_event(&mut parser.buffer)?
-        {
+        if !match parser.reader.read_event(&mut parser.buffer)? {
             Event::End(_) => return Ok(None),
             Event::Eof => {
                 return Err(quick_xml::Error::UnexpectedEof(format!(
@@ -227,9 +224,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
                 ))
                 .into())
             }
-            Event::Start(event) => {
-                event.local_name() == b"page"
-            }
+            Event::Start(event) => event.local_name() == b"page",
             _ => continue,
         } {
             skip_element(parser)?;
@@ -243,10 +238,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
         let mut redirect = None;
         loop {
             parser.buffer.clear();
-            match match parser
-                .reader
-                .read_event(&mut parser.buffer)?
-            {
+            match match parser.reader.read_event(&mut parser.buffer)? {
                 Event::End(_) => {
                     return match (namespace, text, title) {
                         (Some(namespace), Some(text), Some(title)) => Ok(Some(Page {
@@ -296,21 +288,17 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
                     }
                     loop {
                         parser.buffer.clear();
-                        match match parser.reader.read_event(
-                            &mut parser.buffer,
-                        )? {
+                        match match parser.reader.read_event(&mut parser.buffer)? {
                             Event::End(_) => match text {
                                 None => return Err(Error::Format(parser.reader.buffer_position())),
                                 Some(_) => break,
                             },
-                            Event::Start(event) => {
-                                match event.local_name() {
-                                    b"format" => RevisionChildElement::Format,
-                                    b"model" => RevisionChildElement::Model,
-                                    b"text" => RevisionChildElement::Text,
-                                    _ => RevisionChildElement::Unknown,
-                                }
-                            }
+                            Event::Start(event) => match event.local_name() {
+                                b"format" => RevisionChildElement::Format,
+                                b"model" => RevisionChildElement::Model,
+                                b"text" => RevisionChildElement::Text,
+                                _ => RevisionChildElement::Unknown,
+                            },
                             _ => continue,
                         } {
                             RevisionChildElement::Format => {
