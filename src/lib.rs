@@ -99,6 +99,12 @@ pub enum Error {
     XmlReader(quick_xml::Error),
 }
 
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
 /// Parsed page.
 ///
 /// Parsed from the `page` element.
@@ -343,7 +349,7 @@ fn next(parser: &mut Parser<impl BufRead>) -> Result<Option<Page>, Error> {
 /// The stream is parsed as an XML dump exported from Mediawiki. The parser is an iterator over the pages in the dump.
 pub fn parse<R: BufRead>(source: R) -> Parser<R> {
     let mut reader = Reader::from_reader(source);
-    reader.expand_empty_elements(true);
+    reader.expand_empty_elements(true).check_end_names(false);
     Parser {
         buffer: vec![],
         namespace_buffer: vec![],
